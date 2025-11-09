@@ -1,5 +1,4 @@
 import VehicleSwitcher from './VehicleSwitcher'
-import GitHubIcon from '../assets/images/icons/GitHub.svg'
 
 function Header() {
     return (
@@ -11,9 +10,7 @@ function Header() {
             </div>
 
             <div className='px-5 flex justify-end items-center'>
-                <a target='_blank' href='https://github.com/theshanergy/4x4builder' title='GitHub'>
-                    <GitHubIcon className='icon' />
-                </a>
+                {/* Future: Add additional header actions here */}
             </div>
         </div>
     )

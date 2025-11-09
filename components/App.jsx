@@ -7,6 +7,8 @@ import Sidebar from './Sidebar'
 import Canvas from './Canvas'
 import Actions from './Actions'
 import Notification from './Notification'
+import ChatInterface from './ChatInterface'
+import HandlerTestUI from './HandlerTestUI'
 
 export default function App() {
     // Get vehicle state from game store
@@ -24,6 +26,8 @@ export default function App() {
             <Sidebar />
             <Actions />
             <Notification />
+            <ChatInterface />
+            <HandlerTestUI />
         </div>
     )
 }
