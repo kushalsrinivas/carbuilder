@@ -1,0 +1,309 @@
+GEMINI FUNCTION CALL FLOW
+═══════════════════════════════════════════════════════════════════════
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                         USER ACTION                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Types: "Change to a Jeep Wrangler"
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                    FRONTEND: ChatInterface.jsx                     ┃
+┃                                                                    ┃
+┃  handleSendMessage()                                              ┃
+┃    └─ sendMessageStreaming(message)                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ HTTP POST /run_sse
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                      BACKEND: FastAPI                             ┃
+┃                                                                    ┃
+┃  Gemini API.generateContent({                                     ┃
+┃    contents: [{ text: "Change to a Jeep Wrangler" }],            ┃
+┃    tools: [function_declarations]                                 ┃
+┃  })                                                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Returns response with function calls
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                     BACKEND: SSE Stream                           ┃
+┃                                                                    ┃
+┃  data: {                                                          ┃
+┃    content: {                                                     ┃
+┃      parts: [                                                     ┃
+┃        { text: "Great! I'll switch to a Jeep..." },              ┃
+┃        {                                                          ┃
+┃          functionCall: {                                          ┃
+┃            name: "change_vehicle_model",                          ┃
+┃            args: { model_id: "jeep_jku" },                       ┃
+┃            id: "call-123"                                         ┃
+┃          }                                                         ┃
+┃        }                                                           ┃
+┃      ]                                                             ┃
+┃    }                                                               ┃
+┃  }                                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ SSE stream chunks
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃              FRONTEND: chat-api.js (sendMessageStreaming)         ┃
+┃                                                                    ┃
+┃  1. Read SSE chunk                                                ┃
+┃     const parsedData = JSON.parse(eventData)                      ┃
+┃                                                                    ┃
+┃  2. Extract text                                                  ┃
+┃     const text = extractTextFromEvent(parsedData)                 ┃
+┃     // "Great! I'll switch to a Jeep..."                          ┃
+┃                                                                    ┃
+┃  3. Parse function calls ⭐ NEW                                    ┃
+┃     const commands = parseFunctionCallsFromEvent(parsedData)      ┃
+┃     allFunctionCallCommands.push(...commands)                     ┃
+┃                                                                    ┃
+┃  4. Create structured response ⭐ NEW                              ┃
+┃     if (allFunctionCallCommands.length > 0) {                     ┃
+┃       structuredResponse = createStructuredResponse(commands)     ┃
+┃     }                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Function call detected!
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         FRONTEND: function-call-mapper.js ⭐ NEW                   ┃
+┃                                                                    ┃
+┃  parseFunctionCallsFromEvent()                                    ┃
+┃    ↓                                                               ┃
+┃  parseFunctionCall({                                              ┃
+┃    name: "change_vehicle_model",                                  ┃
+┃    args: { model_id: "jeep_jku" },                               ┃
+┃    id: "call-123"                                                 ┃
+┃  })                                                                ┃
+┃    ↓                                                               ┃
+┃  1. mapFunctionNameToCommandType()                                ┃
+┃     "change_vehicle_model" → "change_model"                       ┃
+┃                                                                    ┃
+┃  2. transformParameters()                                         ┃
+┃     { model_id: "jeep_jku" } → { model_id: "jeep_jku" }         ┃
+┃                                                                    ┃
+┃  3. generateDescription()                                         ┃
+┃     "Changed vehicle to jeep_jku"                                 ┃
+┃                                                                    ┃
+┃  Returns:                                                          ┃
+┃  {                                                                 ┃
+┃    command_type: "change_model",                                  ┃
+┃    parameters: { model_id: "jeep_jku" },                         ┃
+┃    description: "Changed vehicle to jeep_jku",                    ┃
+┃    client_id: "default",                                          ┃
+┃    function_call_id: "call-123"                                   ┃
+┃  }                                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Command created!
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃              FRONTEND: chat-api.js (continued)                    ┃
+┃                                                                    ┃
+┃  createStructuredResponse([command])                              ┃
+┃    ↓                                                               ┃
+┃  Returns finalMessage:                                            ┃
+┃  {                                                                 ┃
+┃    parts: [{ text: "Great! I'll switch..." }],                   ┃
+┃    structured: {                                                  ┃
+┃      vehicle_updates: [                                           ┃
+┃        {                                                           ┃
+┃          command_type: "change_model",                            ┃
+┃          parameters: { model_id: "jeep_jku" },                   ┃
+┃          description: "Changed vehicle to jeep_jku"              ┃
+┃        }                                                           ┃
+┃      ]                                                             ┃
+┃    }                                                               ┃
+┃  }                                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Returns to ChatInterface
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                FRONTEND: ChatInterface.jsx                        ┃
+┃                                                                    ┃
+┃  Receives finalMessage                                            ┃
+┃    ↓                                                               ┃
+┃  1. Display AI text in chat                                       ┃
+┃     "Great! I'll switch to a Jeep..."                            ┃
+┃                                                                    ┃
+┃  2. Process structured response                                   ┃
+┃     if (finalMessage.structured) {                                ┃
+┃       await processAgentResponse(finalMessage.structured)         ┃
+┃     }                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Call processAgentResponse
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         FRONTEND: vehicle-update-handler.js (existing)            ┃
+┃                                                                    ┃
+┃  processAgentResponse(structured)                                 ┃
+┃    ↓                                                               ┃
+┃  applyVehicleUpdates(vehicle_updates)                             ┃
+┃    ↓                                                               ┃
+┃  applyVehicleUpdate({                                             ┃
+┃    command_type: "change_model",                                  ┃
+┃    parameters: { model_id: "jeep_jku" },                         ┃
+┃    description: "Changed vehicle to jeep_jku"                     ┃
+┃  })                                                                ┃
+┃    ↓                                                               ┃
+┃  switch (command_type) {                                          ┃
+┃    case 'change_model':                                           ┃
+┃      handleChangeModel(parameters)                                ┃
+┃  }                                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Call handler
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         FRONTEND: vehicle-update-handler.js (existing)            ┃
+┃                                                                    ┃
+┃  handleChangeModel({ model_id: "jeep_jku" })                     ┃
+┃    ↓                                                               ┃
+┃  1. Validate model exists                                         ┃
+┃     vehicleConfigs.vehicles["jeep_jku"] ✓                        ┃
+┃                                                                    ┃
+┃  2. Update game store                                             ┃
+┃     useGameStore.getState().setVehicle({ body: "jeep_jku" })    ┃
+┃                                                                    ┃
+┃  3. Show notification                                             ┃
+┃     showNotification({                                            ┃
+┃       message: "Changed vehicle to jeep_jku",                     ┃
+┃       type: "success"                                             ┃
+┃     })                                                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ State updated!
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                  FRONTEND: gameStore.js (existing)                ┃
+┃                                                                    ┃
+┃  setVehicle({ body: "jeep_jku" })                                ┃
+┃    ↓                                                               ┃
+┃  Updates currentVehicle state                                     ┃
+┃    ↓                                                               ┃
+┃  React components re-render                                       ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ State change detected
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                FRONTEND: Vehicle.jsx (existing)                   ┃
+┃                                                                    ┃
+┃  useEffect(() => {                                                ┃
+┃    // Detects currentVehicle.body changed                         ┃
+┃    loadVehicleModel("jeep_jku")                                   ┃
+┃  }, [currentVehicle.body])                                        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Load new model
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                  FRONTEND: 3D Scene (Three.js)                    ┃
+┃                                                                    ┃
+┃  1. Unload old Toyota 4Runner model                               ┃
+┃  2. Load Jeep Wrangler JKU model (.glb)                          ┃
+┃  3. Apply current wheel configuration                             ┃
+┃  4. Apply current lift                                            ┃
+┃  5. Apply current color                                           ┃
+┃  6. Render updated scene                                          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                 │
+                                 │ Scene rendered!
+                                 ↓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                          USER SEES                                ┃
+┃                                                                    ┃
+┃  ✅ Chat message: "Great! I'll switch to a Jeep..."              ┃
+┃  ✅ Notification: "Changed vehicle to jeep_jku"                   ┃
+┃  ✅ 3D Scene: Jeep Wrangler JKU model displayed                   ┃
+┃  ✅ Update badge: "✓ Applied 1 change"                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+
+═══════════════════════════════════════════════════════════════════════
+
+KEY COMPONENTS:
+
+⭐ NEW - function-call-mapper.js
+  - Maps Gemini function names to internal commands
+  - Transforms parameters
+  - Generates descriptions
+
+⭐ MODIFIED - chat-api.js
+  - Parses function calls from SSE stream
+  - Creates structured responses
+
+✓ EXISTING - vehicle-update-handler.js
+  - Applies vehicle updates
+  - Calls scene handlers
+  - Shows notifications
+
+✓ EXISTING - scene-handlers.js
+  - Updates game store
+  - Validates parameters
+
+✓ EXISTING - gameStore.js
+  - Manages vehicle state
+  - Triggers React re-renders
+
+═══════════════════════════════════════════════════════════════════════
+
+TIMELINE: ~200ms total
+
+  0ms:   User types message
+  50ms:  Backend receives request
+  200ms: Gemini generates response with function call
+  250ms: SSE stream starts
+  260ms: Frontend parses function call ⭐ NEW
+  261ms: Function mapped to command ⭐ NEW
+  262ms: Structured response created ⭐ NEW
+  265ms: Command applied to store
+  270ms: 3D model starts loading
+  500ms: New model fully loaded and rendered
+
+═══════════════════════════════════════════════════════════════════════
+
+LOGS TO WATCH:
+
+Console output during function call:
+
+  📨 [API] Parsed SSE data: {...}
+  📞 [API] Function calls parsed: [...]
+  🔍 [Function Call Mapper] Parsing function call
+  ✅ [Function Call Mapper] Mapped to command type: change_model
+  📊 [API] Created structured response: {...}
+  🤖 [Vehicle Update] PROCESSING AGENT RESPONSE
+  🔧 [Vehicle Update] Applying: change_model
+  🚗 [Handler] handleChangeModel called with: { model_id: 'jeep_jku' }
+  ✅ [Handler] Model changed successfully
+  ✅ [API] Streaming complete!
+
+═══════════════════════════════════════════════════════════════════════
+
+MULTIPLE FUNCTION CALLS:
+
+When AI makes multiple changes at once:
+
+  User: "Make it a red Jeep with a 3 inch lift"
+
+  Gemini returns 3 function calls:
+    1. change_vehicle_model → Jeep
+    2. change_vehicle_color → Red
+    3. adjust_lift → 3 inches
+
+  Flow:
+    ↓ All parsed together
+    ↓ All mapped to commands
+    ↓ Structured response with 3 updates
+    ↓ Applied sequentially (100ms delay each for visual feedback)
+    ↓ User sees 3 notifications + final result
+
+═══════════════════════════════════════════════════════════════════════
+

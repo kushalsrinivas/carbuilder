@@ -4,16 +4,11 @@ import App from './components/App'
 
 import './assets/styles/global.css'
 
-// Load test utilities and diagnostics in development
+// Load test utilities in development
 if (import.meta.env.DEV) {
     import('./src/lib/vehicle-update-test.js').then(module => {
         console.log('🧪 Vehicle update test utilities loaded')
         console.log('Run tests with: window.vehicleUpdateTests.runAllTests()')
-    })
-    
-    import('./src/lib/connection-diagnostics.js').then(module => {
-        console.log('🔧 Connection diagnostics loaded')
-        console.log('Run diagnostics with: window.mcpDiagnostics.runFullDiagnostics()')
     })
 }
 

@@ -1,4 +1,8 @@
 import { env } from '../env.js'
+import { 
+  parseFunctionCallsFromEvent, 
+  createStructuredResponse 
+} from './function-call-mapper.js'
 
 // Types for better code documentation
 /**
@@ -304,6 +308,7 @@ export async function sendMessageStreaming(userId, sessionId, content, onChunk, 
     let accumulatedText = ''
     let allToolEvents = []
     let structuredResponse = null
+    let allFunctionCallCommands = []
 
     try {
       while (true) {
@@ -346,12 +351,20 @@ export async function sendMessageStreaming(userId, sessionId, content, onChunk, 
                 structuredResponse = parsedData.structured
               }
 
+              // Parse function calls from Gemini format
+              const functionCallCommands = parseFunctionCallsFromEvent(parsedData)
+              if (functionCallCommands.length > 0) {
+                console.log('📞 [API] Function calls parsed:', functionCallCommands)
+                allFunctionCallCommands.push(...functionCallCommands)
+              }
+
               // Call the chunk callback if provided
               if (onChunk) {
                 onChunk({
                   text: text || undefined,
                   toolEvents: toolEvents.length > 0 ? toolEvents : undefined,
-                  structured: parsedData.structured || undefined
+                  structured: parsedData.structured || undefined,
+                  functionCalls: functionCallCommands.length > 0 ? functionCallCommands : undefined
                 })
               }
             } catch (parseError) {
@@ -368,8 +381,16 @@ export async function sendMessageStreaming(userId, sessionId, content, onChunk, 
     console.log('✅ [API] Streaming complete!')
     console.log('📝 [API] Final accumulated text:', accumulatedText)
     console.log('🔧 [API] Total tool events:', allToolEvents.length)
+    console.log('📞 [API] Total function call commands:', allFunctionCallCommands.length)
     console.log('📊 [API] Structured response:', structuredResponse)
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+    // If we have function call commands but no structured response, create one
+    if (allFunctionCallCommands.length > 0 && !structuredResponse) {
+      console.log('🔄 [API] Creating structured response from function calls')
+      structuredResponse = createStructuredResponse(allFunctionCallCommands)
+      console.log('📊 [API] Created structured response:', structuredResponse)
+    }
 
     // Return the final message
     const finalMessage = {
@@ -378,7 +399,8 @@ export async function sendMessageStreaming(userId, sessionId, content, onChunk, 
       parts: [{ text: accumulatedText }],
       timestamp: new Date(),
       toolEvents: allToolEvents,
-      structured: structuredResponse
+      structured: structuredResponse,
+      functionCallCommands: allFunctionCallCommands
     }
 
     console.log('📬 [API] Returning final message:', finalMessage)
