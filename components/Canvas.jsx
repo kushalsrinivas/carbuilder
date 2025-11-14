@@ -10,6 +10,7 @@ import CameraControls from './CameraControls'
 import Loader from './Loader'
 import VehicleManager from './VehicleManager'
 import Screenshot from './Screenshot'
+import DecalOverlay from './DecalOverlay'
 
 // Canvas component
 const ThreeCanvas = () => {
@@ -31,6 +32,7 @@ const ThreeCanvas = () => {
                 <Physics paused={!physicsEnabled}>
                     <Suspense fallback={null}>
                         <VehicleManager />
+                        <DecalOverlay />
                     </Suspense>
 
                     <Environment />

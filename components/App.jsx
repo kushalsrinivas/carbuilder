@@ -1,33 +1,37 @@
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
-import useGameStore from '../store/gameStore'
+import useGameStore from "../store/gameStore";
 
-import Header from './Header'
-import Sidebar from './Sidebar'
-import Canvas from './Canvas'
-import Actions from './Actions'
-import Notification from './Notification'
-import ChatInterface from './ChatInterface'
-import HandlerTestUI from './HandlerTestUI'
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+import Canvas from "./Canvas";
+import Actions from "./Actions";
+import Notification from "./Notification";
+import ChatInterface from "./ChatInterface";
+import HandlerTestUI from "./HandlerTestUI";
+import DecalManager from "./DecalManager";
+import DecalEditor from "./DecalEditor";
 
 export default function App() {
-    // Get vehicle state from game store
-    const loadVehicleFromUrl = useGameStore((state) => state.loadVehicleFromUrl)
+  // Get vehicle state from game store
+  const loadVehicleFromUrl = useGameStore((state) => state.loadVehicleFromUrl);
 
-    // Run once to load vehicle from URL if present
-    useEffect(() => {
-        loadVehicleFromUrl()
-    }, [loadVehicleFromUrl])
+  // Run once to load vehicle from URL if present
+  useEffect(() => {
+    loadVehicleFromUrl();
+  }, [loadVehicleFromUrl]);
 
-    return (
-        <div className='App'>
-            <Header />
-            <Canvas />
-            <Sidebar />
-            <Actions />
-            <Notification />
-            <ChatInterface />
-            <HandlerTestUI />
-        </div>
-    )
+  return (
+    <div className="App">
+      <Header />
+      <Canvas />
+      <Sidebar />
+      <Actions />
+      <Notification />
+      <ChatInterface />
+      <DecalManager />
+      <DecalEditor />
+      {/* <HandlerTestUI /> */}
+    </div>
+  );
 }

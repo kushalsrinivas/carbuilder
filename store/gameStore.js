@@ -143,6 +143,41 @@ const useGameStore = create((set, get) => {
 
             return false
         },
+
+        // Decal state management
+        decals: [],
+        selectedDecalId: null,
+        placementMode: false,
+        
+        addDecal: (decalData) => set((state) => ({
+            decals: [...state.decals, {
+                id: `decal_${Date.now()}`,
+                imageUrl: decalData.imageUrl,
+                position: decalData.position || { x: 0, y: 0, z: 0 },
+                rotation: decalData.rotation || { x: 0, y: 0, z: 0 },
+                scale: decalData.scale || { x: 0.3, y: 0.3, z: 0.3 },
+                opacity: decalData.opacity || 1,
+                normal: decalData.normal || { x: 0, y: 1, z: 0 },
+                ...decalData,
+            }]
+        })),
+        
+        updateDecal: (id, updates) => set((state) => ({
+            decals: state.decals.map(decal => 
+                decal.id === id ? { ...decal, ...updates } : decal
+            )
+        })),
+        
+        deleteDecal: (id) => set((state) => ({
+            decals: state.decals.filter(decal => decal.id !== id),
+            selectedDecalId: state.selectedDecalId === id ? null : state.selectedDecalId,
+        })),
+        
+        setSelectedDecal: (id) => set({ selectedDecalId: id }),
+        
+        setPlacementMode: (mode) => set({ placementMode: mode }),
+        
+        clearDecals: () => set({ decals: [], selectedDecalId: null }),
     }
 })
 
