@@ -178,6 +178,39 @@ const useGameStore = create((set, get) => {
         setPlacementMode: (mode) => set({ placementMode: mode }),
         
         clearDecals: () => set({ decals: [], selectedDecalId: null }),
+
+        // Object state management (for 3D objects like cubes)
+        objects: [],
+        selectedObjectId: null,
+        objectPlacementMode: false,
+        
+        addObject: (objectData) => set((state) => ({
+            objects: [...state.objects, {
+                id: `object_${Date.now()}`,
+                type: objectData.type || 'cube',
+                position: objectData.position || { x: 0, y: 2, z: 0 },
+                rotation: objectData.rotation || { x: 0, y: 0, z: 0 },
+                scale: objectData.scale || { x: 1, y: 1, z: 1 },
+                ...objectData,
+            }]
+        })),
+        
+        updateObject: (id, updates) => set((state) => ({
+            objects: state.objects.map(obj => 
+                obj.id === id ? { ...obj, ...updates } : obj
+            )
+        })),
+        
+        deleteObject: (id) => set((state) => ({
+            objects: state.objects.filter(obj => obj.id !== id),
+            selectedObjectId: state.selectedObjectId === id ? null : state.selectedObjectId,
+        })),
+        
+        setSelectedObject: (id) => set({ selectedObjectId: id }),
+        
+        setObjectPlacementMode: (mode) => set({ objectPlacementMode: mode }),
+        
+        clearObjects: () => set({ objects: [], selectedObjectId: null }),
     }
 })
 

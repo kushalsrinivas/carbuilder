@@ -11,6 +11,8 @@ import Loader from './Loader'
 import VehicleManager from './VehicleManager'
 import Screenshot from './Screenshot'
 import DecalOverlay from './DecalOverlay'
+import ObjectManager from './ObjectManager'
+import ObjectPlacementHandler from './ObjectPlacementHandler'
 
 // Canvas component
 const ThreeCanvas = () => {
@@ -33,6 +35,8 @@ const ThreeCanvas = () => {
                     <Suspense fallback={null}>
                         <VehicleManager />
                         <DecalOverlay />
+                        <ObjectManager />
+                        <ObjectPlacementHandler />
                     </Suspense>
 
                     <Environment />

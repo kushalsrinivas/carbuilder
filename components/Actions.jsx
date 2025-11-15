@@ -7,6 +7,8 @@ const Actions = () => {
     const savedVehicles = useGameStore((state) => state.savedVehicles)
     const setSavedVehicles = useGameStore((state) => state.setSavedVehicles)
     const showNotification = useGameStore((state) => state.showNotification)
+    const objectPlacementMode = useGameStore((state) => state.objectPlacementMode)
+    const setObjectPlacementMode = useGameStore((state) => state.setObjectPlacementMode)
 
     // Save current vehicle to local storage.
     const saveVehicle = () => {
@@ -118,11 +120,22 @@ const Actions = () => {
         window.dispatchEvent(new Event('takeScreenshot'))
     }
 
+    // Toggle placement mode
+    const togglePlacementMode = () => {
+        setObjectPlacementMode(!objectPlacementMode)
+    }
+
     return (
         <div id='actions' className='flex gap-2 absolute bottom-4 right-4'>
             <button onClick={saveVehicle}>Save</button>
             <button onClick={shareVehicle}>Share</button>
             <button onClick={takeScreenshot}>Screenshot</button>
+            <button 
+                onClick={togglePlacementMode}
+                className={objectPlacementMode ? 'active' : ''}
+            >
+                Place Cube
+            </button>
         </div>
     )
 }

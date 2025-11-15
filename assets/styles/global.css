@@ -72,6 +72,9 @@ button.success,
 .button.success {
     @apply bg-green-700 hover:bg-green-600;
 }
+button.active {
+    @apply bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300;
+}
 
 /* icons */
 .icon {
